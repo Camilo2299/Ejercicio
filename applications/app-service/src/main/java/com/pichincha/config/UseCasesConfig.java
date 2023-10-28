@@ -19,7 +19,7 @@ public class UseCasesConfig {
     public RequestApiRepository requestApiRepository() {
         return new RequestApiRepository() {
             @Override
-            public Mono<RequestApi> sendRequestApi(String message, String to, String from, String timeToLifeSec) {
+            public Mono<RequestApi> sendRequestApi(String message, String to, String from, int timeToLifeSec) {
                 return Mono.just(RequestApi.builder().message(message).to(to).from(from).timeToLifeSec(timeToLifeSec).build());
             }
         };
