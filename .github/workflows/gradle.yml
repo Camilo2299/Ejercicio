@@ -22,7 +22,7 @@ jobs:
         java-version: 17
 
     - name: Build and Run Tests with Jacoco
-      uses: gradle/gradle-build-action@v4
+      uses: gradle/gradle-build-action@v3
       with:
         tasks: clean build jacocoTestReport --scan --parallel
         working-directory: Ejercicio
