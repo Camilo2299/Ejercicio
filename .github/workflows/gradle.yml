@@ -22,7 +22,7 @@ jobs:
         java-version: 17
 
     - name: Build and Run Tests with Jacoco
-      uses: gradle/gradle-build-action@v3
+      uses: gradle/gradle-build-action@bd5760595778326ba7f1441bcf7e88b49de61a25
       with:
         tasks: clean build jacocoTestReport --scan --parallel
         working-directory: Ejercicio
@@ -51,7 +51,7 @@ jobs:
         java-version: 17
 
     - name: Code Coverage Verification
-      uses: gradle/gradle-build-action@v4
+      uses: gradle/gradle-build-action@bd5760595778326ba7f1441bcf7e88b49de61a25
       with:
         tasks: jacocoTestCoverageVerification --parallel
         working-directory: Ejercicio
