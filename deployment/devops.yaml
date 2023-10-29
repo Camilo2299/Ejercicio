@@ -1,0 +1,149 @@
+# Gradle
+# Build your Java project and run tests with Gradle using a Gradle wrapper script.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+name: $(Build.SourceBranchName).$(date:yyyyMMdd)$(rev:.r)
+
+variables:
+  - name: 'projectName'
+    value: 'DevOpsTest'
+  - name: 'artifactName'
+    value: 'DevOpsTest'
+
+resources:
+  - repo: self
+
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - 'Ejercicio/*'
+
+jobs:
+  - job: BuildJob
+    displayName: 'Build'
+    pool:
+      name: Build
+      demands:
+        - java
+        - JAVA_HOME_17_X64
+    steps:
+      - task: SonarQubePrepare@4
+        displayName: 'Prepare analysis on SonarQube'
+        inputs:
+          SonarQube: SonarQube
+          scannerMode: CLI
+          configMode: manual
+          cliProjectKey: $(artifactName)
+          cliProjectName: $(artifactName)
+          cliProjectVersion: $(Build.BuildNumber)
+          cliSources: $(artifactName)
+          extraProperties: |
+            sonar.sources=$(Build.SourcesDirectory)/$(artifactName)/src/main/java
+            sonar.junit.reportPaths=$(Build.SourcesDirectory)/$(artifactName)/applications/app-service/build/test-results/test
+            sonar.coverage.jacoco.xmlReportPaths=$(System.DefaultWorkingDirectory)/$(artifactName)/build/jacoco/report.xml
+            sonar.exclusions=**/MainApplication.java,**/*Test.java,**/**.bin
+
+      - task: Gradle@2
+        displayName: 'Gradle build and test'
+        inputs:
+          workingDirectory: '$(artifactName)'
+          gradleWrapperFile: '$(artifactName)/gradlew'
+          tasks: 'clean build jacocoMergedReport --refresh-dependencies --full-stacktrace'
+          publishJUnitResults: true
+          testResultsFiles: '$(artifactName)/**/build/test-results/test/TEST-*.xml'
+          sonarQubeRunAnalysis: true
+          sqGradlePluginVersionChoice: 'build'
+          testRunTitle: '$(artifactName)'
+          sonarQubeServiceEndpoint: SonarqubeGradle
+          sonarQubeProjectName: '$(artifactName)'
+          sonarQubeProjectKey: '$(artifactName)'
+          sonarQubeProjectVersion: '$(Build.BuildNumber)'
+          sonarQubeGradlePluginVersion: 2.7
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '1.11'
+        condition: succeeded()
+
+      - task: Sonar-buildbreaker@8
+        displayName: 'Break Build on Quality Gate Failure'
+        inputs:
+          SonarQube: SonarQube
+
+      - task: PublishTestResults@2
+        displayName: 'Publish Test Results'
+        inputs:
+          testResultsFiles: '**/TEST-*.xml'
+
+      - task: PublishCodeCoverageResults@1
+        displayName: 'Publish code coverage'
+        inputs:
+          summaryFileLocation: '$(System.DefaultWorkingDirectory)/$(artifactName)/build/jacoco/report.xml'
+          reportDirectory: '$(System.DefaultWorkingDirectory)/$(artifactName)/build/jacoco/report.xml'
+      
+      # Continuos Deployment
+      - task: replacetokens@5
+        inputs:
+          rootDirectory: '$(projectName)/applications/app-service/src/main/resources'
+          targetFiles: 'application.yaml'
+          encoding: 'auto'
+          tokenPattern: 'default'
+          writeBOM: true
+          actionOnMissing: 'warn'
+          keepToken: false
+          actionOnNoFiles: 'warn'
+          enableTransforms: false
+          enableRecursion: false
+          useLegacyPattern: false
+          enableTelemetry: truebuild/libs/
+      #- script: |
+      #    cat $(System.DefaultWorkingDirectory)/$(projectName)/applications/app-service/src/main/resources/application.yaml
+      #   echo "------------"
+      - task: Gradle@2
+        displayName: 'Gradle build and test'
+        inputs:
+          workingDirectory: '$(artifactName)'
+          gradleWrapperFile: '$(artifactName)/gradlew'
+          tasks: 'clean build jacocoMergedReport --refresh-dependencies --full-stacktrace'
+          sqGradlePluginVersionChoice: 'build'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '17'
+      #        condition: succeededOrFailed()
+
+      - task: CopyFiles@2
+        displayName: 'Copy Jar'
+        inputs:
+          SourceFolder: $(Build.repository.LocalPath)/$(projectName)/applications/app-service/build/libs/
+          Contents: |
+            ms-consult-voucher.jar
+          TargetFolder: $(Build.repository.LocalPath)/$(projectName)/deployment/app
+
+      - task: ArchiveFiles@2
+        displayName: 'Compress artifacts'
+        inputs:
+          rootFolderOrFile: $(Build.repository.LocalPath)/$(projectName)/deployment/
+          includeRootFolder: false
+          archiveFile: '$(projectName)Artifact.zip'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifact: App'
+        inputs:
+          PathtoPublish: '$(projectName)/deployment/app'
+          ArtifactName: app-artifact
+        condition: succeeded()
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifact: EKS'
+        inputs:
+          PathtoPublish: '$(projectName)/deployment/eks'
+          ArtifactName: eks-artifact
+        condition: succeeded()
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish artifact: PerformanceTest'
+        inputs:
+          PathtoPublish: '$(projectName)/deployment/performanceTest'
+          ArtifactName: performance-test-artifact
+        condition: succeeded()
