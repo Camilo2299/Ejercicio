@@ -1,0 +1,74 @@
+name: Build and Test with Jacoco
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - 'Ejercicio/*'
+
+jobs:
+  BuildAndTest:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+
+    - name: Build and Run Tests with Jacoco
+      run: ./gradlew clean build jacocoTestReport --scan --parallel
+      working-directory: Ejercicio
+
+  PublishCoverage:
+    needs: BuildAndTest
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Publish Code Coverage Results
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  CoverageVerification:
+    needs: BuildAndTest
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+
+    - name: Code Coverage Verification
+      run: ./gradlew jacocoTestCoverageVerification --parallel
+      working-directory: Ejercicio
+
+  PublishCodeCoverageResults:
+    needs: CoverageVerification
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Publish Code Coverage Results
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  PublishBuildArtifacts:
+    needs: CoverageVerification
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Archive Build Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: app-artifact
+        path: $(github.workspace)/Ejercicio/deployment/app
