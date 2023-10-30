@@ -36,7 +36,7 @@ jobs:
     - name: Publish Code Coverage Results
       uses: codecov/codecov-action@v3
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        working-directory: Ejercicio
 
   CoverageVerification:
     needs: BuildAndTest
@@ -66,7 +66,7 @@ jobs:
     - name: Publish Code Coverage Results
       uses: codecov/codecov-action@v3
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        working-directory: Ejercicio
 
   PublishBuildArtifacts:
     needs: CoverageVerification

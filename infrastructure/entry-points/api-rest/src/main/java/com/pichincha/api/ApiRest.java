@@ -38,20 +38,14 @@ public class ApiRest {
     }
     @GetMapping()
     public Mono<ResponseEntity<ResponseDTO>> validateGet(){
-        ObjectNode object = new ObjectNode(JsonNodeFactory.instance);
-        ArrayNode jsonNodes = new ArrayNode(JsonNodeFactory.instance);
-        return Mono.just(ResponseEntity.ok().body(ResponseDTO.success(TechnicalExceptionEnum.ERROR.getMessage())));
+        return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ResponseDTO.buildError(TechnicalExceptionEnum.ERROR.getMessage())));
     }
     @PutMapping()
     public Mono<ResponseEntity<ResponseDTO>> validatePut(){
-        ObjectNode object = new ObjectNode(JsonNodeFactory.instance);
-        ArrayNode jsonNodes = new ArrayNode(JsonNodeFactory.instance);
-        return Mono.just(ResponseEntity.ok().body(ResponseDTO.success(TechnicalExceptionEnum.ERROR.getMessage())));
+        return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ResponseDTO.buildError(TechnicalExceptionEnum.ERROR.getMessage())));
     }
     @DeleteMapping()
     public Mono<ResponseEntity<ResponseDTO>> validateDelete(){
-        ObjectNode object = new ObjectNode(JsonNodeFactory.instance);
-        ArrayNode jsonNodes = new ArrayNode(JsonNodeFactory.instance);
-        return Mono.just(ResponseEntity.ok().body(ResponseDTO.success(TechnicalExceptionEnum.ERROR.getMessage())));
+        return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ResponseDTO.buildError(TechnicalExceptionEnum.ERROR.getMessage())));
     }
 }
