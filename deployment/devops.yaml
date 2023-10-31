@@ -151,11 +151,11 @@ jobs:
 
   - stage: Deploy
     displayName: Deploy to Dev
-    dependsOn: Build
     jobs:
-      - deployment: Deploy
+      - job: Deploy
+      - deployment:
+        environment: 'devops-aks.default'
         displayName: Deploy to AKS
-        environment: 'k8sdev.default'
         pool:
           vmImage: ubuntu-latest
         strategy:
