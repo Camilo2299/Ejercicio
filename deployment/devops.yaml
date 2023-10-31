@@ -7,9 +7,9 @@ name: $(Build.SourceBranchName).$(date:yyyyMMdd)$(rev:.r)
 
 variables:
   - name: 'projectName'
-    value: 'DevOpsTest'
+    value: 'ms-devops'
   - name: 'artifactName'
-    value: 'DevOpsTest'
+    value: 'ms-devops'
 
 resources:
   - repo: self
@@ -117,8 +117,8 @@ jobs:
         inputs:
           SourceFolder: $(Build.repository.LocalPath)/$(projectName)/applications/app-service/build/libs/
           Contents: |
-            ms-consult-voucher.jar
-          TargetFolder: $(Build.repository.LocalPath)/$(projectName)/deployment/app
+            ms-devops.jar
+          TargetFolder: $(Build.repository.LocalPath)/$(projectName)/deployment/
 
       - task: ArchiveFiles@2
         displayName: 'Compress artifacts'
@@ -134,16 +134,56 @@ jobs:
           ArtifactName: app-artifact
         condition: succeeded()
 
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifact: EKS'
+      - task: Docker@2
+        displayName: Push Docker image
         inputs:
-          PathtoPublish: '$(projectName)/deployment/eks'
-          ArtifactName: eks-artifact
-        condition: succeeded()
+          containerRegistry: 'acrcamilo2299'
+          repository: 'ms-devops'
+          command: 'push'
+          tags: 'devops'
 
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish artifact: PerformanceTest'
+      - task: PublishPipelineArtifact@1
         inputs:
-          PathtoPublish: '$(projectName)/deployment/performanceTest'
-          ArtifactName: performance-test-artifact
-        condition: succeeded()
+          targetPath: '$(Pipeline.Workspace)/s/kubernetes'
+          artifact: 'manifests'
+          publishLocation: 'pipeline'
+
+
+  - stage: Deploy
+    displayName: Deploy to Dev
+    dependsOn: Build
+    variables:
+      acrsecret: k8sacrauth
+      acrdevurl: 'devops-aks-dns-cg7dcbzl.hcp.eastus.azmk8s.io'
+      replicaNo: 3
+    jobs:
+      - deployment: Deploy
+        displayName: Deploy to AKS
+        environment: 'k8sdev.default'
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'manifests'
+                    targetPath: '$(Pipeline.Workspace)/manifests'
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'createSecret'
+                    namespace: 'default'
+                    secretType: 'dockerRegistry'
+                    secretName: 'devopscamilo2299'
+                    dockerRegistryEndpoint: 'acrcamilo2299'
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    namespace: 'default'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/deployment.yml
+                      $(Pipeline.Workspace)/manifests/service.yml
+                    containers: 'acrcamilo2299.azurecr.io/ms-devops:devops'
+                    imagePullSecrets: 'devopscamilo2299'

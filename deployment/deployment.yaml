@@ -1,0 +1,35 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: ms-devops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ms-devops
+  template:
+    metadata:
+      labels:
+        app: ms-devops
+    spec:
+      containers:
+        - name: ms-devops
+          image: acrcamilo2299.azurecr.io/ms-devops
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: ms-devops-port
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 10
+            successThreshold: 1
+            failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
