@@ -152,10 +152,6 @@ jobs:
   - stage: Deploy
     displayName: Deploy to Dev
     dependsOn: Build
-    variables:
-      acrsecret: k8sacrauth
-      acrdevurl: 'devops-aks-dns-cg7dcbzl.hcp.eastus.azmk8s.io'
-      replicaNo: 3
     jobs:
       - deployment: Deploy
         displayName: Deploy to AKS
